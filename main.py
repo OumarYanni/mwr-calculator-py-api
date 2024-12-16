@@ -4,17 +4,14 @@ import pyxirr
 
 app = Flask(__name__)
 
-# Route d'accueil (GET)
 @app.route("/", methods=["GET"])
 def home():
     return "Bienvenue sur l'API MWR Calculator. Utilisez /api/calculate pour soumettre des données.", 200
 
-# Route principale pour le calcul du MWR
 @app.route('/api/calculate', methods=['POST'])
 def calculate_mwr():
     data = request.get_json()
 
-    # Vérification des données d'entrée
     if not data or "dataset" not in data:
         return jsonify({"error": "Invalid input. Please provide a valid dataset."}), 400
 
@@ -24,6 +21,7 @@ def calculate_mwr():
     table = []
     cash_flows = []
     dates = []
+    invalid_entries = []  # Collecte des erreurs de validation
 
     try:
         # Extraire la valeur initiale
@@ -31,60 +29,115 @@ def calculate_mwr():
         if not initial_value:
             return jsonify({"error": "Initial value 'User base_value_1D' is missing."}), 400
 
-        # Ajouter la première ligne (valeur initiale)
+        # Ajouter la première ligne
         current_equity = initial_value
-        cash_flows.append(-initial_value)  # Flux initial en négatif pour XIRR
-        dates.append(dataset[0]["Date"])
-        
+        first_date = dataset[0].get("Date")
+
+        # Vérifier le format de la date
+        try:
+            first_date_parsed = datetime.strptime(first_date, "%Y-%m-%d")
+            dates.append(first_date_parsed)
+        except ValueError:
+            invalid_entries.append({"Date": first_date, "Reason": "Invalid date format"})
+
+        cash_flows.append(-initial_value)
         table.append({
-            "Date": dataset[0]["Date"],
+            "Date": first_date,
             "Type d'Activité (activity_type)": dataset[0]["Type d'Activité (activity_type)"],
             "Sens Flux de Tréso": dataset[0]["Sens Flux de Tréso"],
             "Flux de trésorerie (net_amount)": -initial_value,
             "Valeur totale portefeuille (liquidités + titres détenus)": current_equity
         })
 
-        # Traiter les autres lignes du dataset
+        # Traiter les autres lignes
         for item in dataset[1:]:
             date = item.get("Date")
-            activity_type = item.get("Type d'Activité (activity_type)")
-            cash_flow_direction = item.get("Sens Flux de Tréso")
-            net_amount = item.get("Flux de trésorerie (net_amount)", 0)
+            try:
+                date_parsed = datetime.strptime(date, "%Y-%m-%d")
+                dates.append(date_parsed)
+            except ValueError:
+                invalid_entries.append({"Date": date, "Reason": "Invalid date format"})
+                continue
 
-            # Calculer l'equity
+            net_amount = item.get("Flux de trésorerie (net_amount)", 0)
+            if not isinstance(net_amount, (int, float)):
+                invalid_entries.append({"Date": date, "Reason": "Invalid net_amount"})
+                continue
+
+            # Mettre à jour l'equity et ajouter aux flux
             current_equity += net_amount
             cash_flows.append(net_amount)
-            dates.append(date)
 
-            # Ajouter chaque événement dans le tableau
+            # Ajouter au tableau pour le suivi
             table.append({
                 "Date": date,
-                "Type d'Activité (activity_type)": activity_type,
-                "Sens Flux de Tréso": cash_flow_direction,
+                "Type d'Activité (activity_type)": item.get("Type d'Activité (activity_type)"),
+                "Sens Flux de Tréso": item.get("Sens Flux de Tréso"),
                 "Flux de trésorerie (net_amount)": net_amount,
                 "Valeur totale portefeuille (liquidités + titres détenus)": current_equity
             })
 
-        # Ligne finale : Valeur finale
-        final_date = dates[-1]
-        final_equity = current_equity
+        # Ligne finale : Déterminer la dernière valeur et sa date
+        last_valid_entry = None  # Initialiser une variable pour le dernier flux valide
+
+        # Rechercher le dernier flux de trésorerie valide (net_amount)
+        for item in reversed(dataset):  # Parcourir le dataset à l'envers
+            net_amount = item.get("Flux de trésorerie (net_amount)", 0)
+            if net_amount != 0:  # Vérifier si le flux est non nul
+                last_valid_entry = item
+                break
+
+        if not last_valid_entry:  # Gérer le cas où aucun flux valide n'est trouvé
+            return jsonify({
+                "error": "No valid cash flow found to determine final portfolio value."
+            }), 400
+
+        # Récupérer la date et la valeur finale à partir du dernier flux valide
+        final_date = last_valid_entry.get("Date")
+        final_equity = last_valid_entry.get("Valeur totale portefeuille (liquidités + titres détenus)", 0)
+
+        # Si la dernière valeur du portefeuille est absente, utiliser la dernière valeur mise à jour
+        if not final_equity:
+            final_equity = current_equity
+
+        try:
+            final_date_parsed = datetime.strptime(final_date, "%Y-%m-%d")
+            dates.append(final_date_parsed)  # Ajouter la date finale
+        except ValueError:
+            invalid_entries.append({"Date": final_date, "Reason": "Invalid date format"})
+
+        cash_flows.append(final_equity)  # Ajouter la valeur finale comme flux positif
+
+        # Ajouter la ligne au tableau pour suivi
         table.append({
             "Date": final_date,
-            "Type d'Activité (activity_type)": "Valeur finale (equity en date du dernier events de tréso)",
+            "Type d'Activité (activity_type)": "Valeur finale (equity en date du dernier événement de trésorerie)",
             "Sens Flux de Tréso": "N/A",
             "Flux de trésorerie (net_amount)": final_equity,
             "Valeur totale portefeuille (liquidités + titres détenus)": final_equity
         })
 
-        # Calcul de XIRR
-        mwr_annualized = pyxirr.xirr(dates, cash_flows)  # Résultat brut (décimal)
-        mwr_percentage = mwr_annualized * 100  # Résultat en pourcentage
+        # Vérification finale : correspondance entre flux et dates
+        if len(cash_flows) != len(dates):
+            return jsonify({
+                "error": "Mismatch between the number of cash flows and dates.",
+                "cash_flows": cash_flows,
+                "dates": [d.strftime("%Y-%m-%d") for d in dates],
+                "invalid_entries": invalid_entries
+            }), 400
 
-        # Réponse finale avec table et résultats MWR
+        # Calcul du XIRR
+        mwr_annualized = pyxirr.xirr(dates, cash_flows)  # Résultat brut
+        mwr_percentage = mwr_annualized * 100
+
+        # Réponse finale
         response = {
             "table": table,
             "MWR_annualized_percentage": round(mwr_percentage, 2),
-            "MWR_annualized_raw": mwr_annualized  # Décimal brut
+            "MWR_annualized_raw": mwr_annualized,
+            "cash_flows_used": cash_flows,
+            "dates_used": [d.strftime("%Y-%m-%d") for d in dates],
+            "invalid_entries": invalid_entries  # Liste des erreurs détectées
         }
         return jsonify(response), 200
 
