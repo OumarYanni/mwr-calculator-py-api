@@ -1,44 +1,46 @@
-[
-  {
-    "Date": "2020-01-01",
-    "Type d'Activité (activity_type)": "base_value_1D",
-    "Sens Flux de Tréso": "N/A valeur initiale",
-    "User base_value_1D": 1234.56
-  },
-  {
-    "Date": "2020-02-14",
-    "Type d'Activité (activity_type)": "FILL (Achat)",
-    "Sens Flux de Tréso": "(-) Négatif : Impacte directement la composition du portefeuille (titres achetés). Réduit la trésorerie (cash).",
-    "Flux de trésorerie (net_amount)": -100
-  },
-  {
-    "Date": "2020-11-30",
-    "Type d'Activité (activity_type)": "DIV (Dividendes)",
-    "Sens Flux de Tréso": "(+) Positif : Dividendes reçus augmentent la trésorerie.",
-    "Flux de trésorerie (net_amount)": 50
-  },
-  {
-    "Date": "2023-03-08",
-    "Type d'Activité (activity_type)": "CSW (Retrait d'espèces(-))",
-    "Sens Flux de Tréso": "(-) Négatif : réduit la trésorerie.",
-    "Flux de trésorerie (net_amount)": -200
-  },
-  {
-    "Date": "2023-08-19",
-    "Type d'Activité (activity_type)": "FILL (Vente)",
-    "Sens Flux de Tréso": "(+) Positif : Impacte directement la composition du portefeuille (titres vendus). Augmente la trésorerie (cash).",
-    "Flux de trésorerie (net_amount)": 100
-  },
-  {
-    "Date": "2023-11-21",
-    "Type d'Activité (activity_type)": "FEE (Frais)",
-    "Sens Flux de Tréso": "(-) Négatif : Réduction de trésorerie due aux frais.",
-    "Flux de trésorerie (net_amount)": -25
-  },
-  {
-    "Date": "2023-12-31",
-    "Type d'Activité (activity_type)": "CSD (Dépôt en espèces(+))",
-    "Sens Flux de Tréso": "(+) Positif : Ajoute de la trésorerie.",
-    "Flux de trésorerie (net_amount)": 500
-  }
-]
+{
+  "dataset": [
+    {
+      "Date": "2020-01-01",
+      "Type d'Activité (activity_type)": "base_value_1D",
+      "Sens Flux de Tréso": "N/A valeur initiale",
+      "User base_value_1D": 1234.56
+    },
+    {
+      "Date": "2020-02-14",
+      "Type d'Activité (activity_type)": "FILL (Achat)",
+      "Sens Flux de Tréso": "(-) Négatif : Impacte directement la composition du portefeuille (titres achetés). Réduit la trésorerie (cash).",
+      "Flux de trésorerie (net_amount)": -100
+    },
+    {
+      "Date": "2020-11-30",
+      "Type d'Activité (activity_type)": "DIV (Dividendes)",
+      "Sens Flux de Tréso": "(+) Positif : Dividendes reçus augmentent la trésorerie.",
+      "Flux de trésorerie (net_amount)": 50
+    },
+    {
+      "Date": "2023-03-08",
+      "Type d'Activité (activity_type)": "CSW (Retrait d'espèces(-))",
+      "Sens Flux de Tréso": "(-) Négatif : réduit la trésorerie.",
+      "Flux de trésorerie (net_amount)": -200
+    },
+    {
+      "Date": "2023-08-19",
+      "Type d'Activité (activity_type)": "FILL (Vente)",
+      "Sens Flux de Tréso": "(+) Positif : Impacte directement la composition du portefeuille (titres vendus). Augmente la trésorerie (cash).",
+      "Flux de trésorerie (net_amount)": 100
+    },
+    {
+      "Date": "2023-11-21",
+      "Type d'Activité (activity_type)": "FEE (Frais)",
+      "Sens Flux de Tréso": "(-) Négatif : Réduction de trésorerie due aux frais.",
+      "Flux de trésorerie (net_amount)": -25
+    },
+    {
+      "Date": "2023-12-31",
+      "Type d'Activité (activity_type)": "CSD (Dépôt en espèces(+))",
+      "Sens Flux de Tréso": "(+) Positif : Ajoute de la trésorerie.",
+      "Flux de trésorerie (net_amount)": 500
+    }
+  ]
+}
