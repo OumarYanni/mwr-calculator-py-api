@@ -2,7 +2,16 @@ from flask import Flask, request, jsonify
 from datetime import datetime
 import pyxirr
 
+from flask_cors import CORS
+
 app = Flask(__name__)
+# Active CORS pour toutes les routes spécifiées
+CORS(app, resources={r"/api/*": {"origins": r"http://localhost:300[0-5]"}}) 
+
+@app.before_request
+def log_request_info():
+    print(f"Method: {request.method}, URL: {request.url}, Data: {request.data}, Headers: {request.headers}")
+
 
 @app.route("/", methods=["GET"])
 def home():
@@ -10,7 +19,10 @@ def home():
 
 @app.route('/api/calculate', methods=['POST'])
 def calculate_mwr():
-    data = request.get_json()
+    try:
+        data = request.get_json()
+    except Exception:
+        return jsonify({"error": "Invalid JSON format"}), 400
 
     if not data or "dataset" not in data:
         return jsonify({"error": "Invalid input. Please provide a valid dataset."}), 400
